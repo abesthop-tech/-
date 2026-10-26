@@ -8,15 +8,16 @@ export const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60; // 31,536,000 seconds
 /**
  * Pure passcode comparison helper.
  * If expected passcode is not configured in environment, returns true (open access).
+ * Strictly validates that provided passcode is a string to prevent TypeErrors on arbitrary inputs.
  */
 export function verifyPasscode(
-  provided: string | undefined | null,
+  provided: unknown,
   expected: string | undefined | null
 ): boolean {
   if (!expected || expected.trim() === '') {
     return true; // Passcode protection disabled
   }
-  if (!provided) {
+  if (typeof provided !== 'string') {
     return false;
   }
   return provided.trim() === expected.trim();
@@ -34,18 +35,25 @@ export function middleware(request: NextRequest) {
   }
 
   const { pathname, searchParams } = request.nextUrl;
+  const normalizedPathname = pathname.toLowerCase();
+  const isApiRoute =
+    normalizedPathname === '/api' || normalizedPathname.startsWith('/api/');
 
-  // 2. Skip public static files, Next.js assets, and manifest
+  // 2. Skip public static files, Next.js assets, and manifest (never applies to API routes)
   if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon.ico') ||
-    pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|webp|webmanifest|css|js|txt)$/)
+    !isApiRoute &&
+    (normalizedPathname.startsWith('/_next') ||
+      normalizedPathname.startsWith('/favicon.ico') ||
+      normalizedPathname.match(/\.(png|jpg|jpeg|gif|svg|ico|webp|webmanifest|css|js|txt)$/))
   ) {
     return NextResponse.next();
   }
 
-  // 3. Skip auth verification route (so login modal can POST credentials)
-  if (pathname.startsWith('/api/auth')) {
+  // 3. Skip auth verification route (so login modal can POST credentials and check auth status)
+  if (
+    normalizedPathname === '/api/auth/verify' ||
+    normalizedPathname.startsWith('/api/auth/verify/')
+  ) {
     return NextResponse.next();
   }
 
@@ -95,7 +103,7 @@ export function middleware(request: NextRequest) {
 
   // 7. Request is unauthenticated
   // For API endpoints: return JSON 401 Unauthorized
-  if (pathname.startsWith('/api/')) {
+  if (isApiRoute) {
     return NextResponse.json(
       {
         error: 'Unauthorized',

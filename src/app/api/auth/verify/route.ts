@@ -3,7 +3,17 @@ import { PASSCODE_COOKIE_NAME, ONE_YEAR_SECONDS, verifyPasscode } from '@/middle
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json().catch(() => ({}));
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      rawBody = null;
+    }
+
+    const body =
+      rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody)
+        ? (rawBody as Record<string, unknown>)
+        : {};
     const provided = body.passcode;
     const expected = process.env.APP_PASSCODE;
 

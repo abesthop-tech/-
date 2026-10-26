@@ -166,6 +166,29 @@ export interface ParsedDailyMenu {
 // 4. Serialization & Parsing Utilities
 // ----------------------------------------------------------------------------
 
+/**
+ * Safe JSON parser with type-safe fallback default.
+ * Shields the application from SyntaxError when encountering corrupted or empty JSON text columns.
+ */
+export function safeJsonParse<T>(raw: string | null | undefined, fallback: T): T {
+  if (!raw || typeof raw !== 'string') {
+    return fallback;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (parsed === null && fallback !== null) {
+      return fallback;
+    }
+    return parsed as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export function parseDish(row: Dish): ParsedDish {
   return {
     ...row,
@@ -173,9 +196,9 @@ export function parseDish(row: Dish): ParsedDish {
     proteinType: (row.proteinType as ProteinType) || null,
     sourceType: row.sourceType as SourceType,
     recipeStatus: row.recipeStatus as RecipeStatus,
-    aliases: JSON.parse(row.aliasesJson || '[]'),
-    ingredients: JSON.parse(row.ingredientsJson || '[]'),
-    steps: JSON.parse(row.stepsJson || '[]'),
+    aliases: safeJsonParse<string[]>(row.aliasesJson, []),
+    ingredients: safeJsonParse<IngredientItem[]>(row.ingredientsJson, []),
+    steps: safeJsonParse<string[]>(row.stepsJson, []),
   };
 }
 
@@ -183,18 +206,18 @@ export function dishToInsert(dish: ParsedDish): NewDish {
   return {
     id: dish.id,
     name: dish.name,
-    aliasesJson: JSON.stringify(dish.aliases || []),
+    aliasesJson: JSON.stringify(dish.aliases ?? []),
     category: dish.category,
-    proteinType: dish.proteinType || null,
+    proteinType: dish.proteinType ?? null,
     sourceType: dish.sourceType,
-    sourceLabel: dish.sourceLabel || null,
-    sourceUrl: dish.sourceUrl || null,
+    sourceLabel: dish.sourceLabel ?? null,
+    sourceUrl: dish.sourceUrl ?? null,
     recipeStatus: dish.recipeStatus,
-    baseServings: dish.baseServings || 3,
-    ingredientsJson: JSON.stringify(dish.ingredients || []),
-    stepsJson: JSON.stringify(dish.steps || []),
-    cookCount: dish.cookCount || 0,
-    lastCookedDate: dish.lastCookedDate || null,
+    baseServings: dish.baseServings ?? 3,
+    ingredientsJson: JSON.stringify(dish.ingredients ?? []),
+    stepsJson: JSON.stringify(dish.steps ?? []),
+    cookCount: dish.cookCount ?? 0,
+    lastCookedDate: dish.lastCookedDate ?? null,
     createdAt: dish.createdAt || new Date().toISOString(),
   };
 }
@@ -203,10 +226,10 @@ export function parseDailyMenu(row: DailyMenu): ParsedDailyMenu {
   return {
     date: row.date,
     servings: row.servings,
-    contextMemo: row.contextMemo,
-    slots: JSON.parse(row.slotsJson || '[]'),
-    parallelSteps: row.parallelStepsJson ? JSON.parse(row.parallelStepsJson) : null,
-    shoppingState: row.shoppingStateJson ? JSON.parse(row.shoppingStateJson) : null,
+    contextMemo: row.contextMemo ?? null,
+    slots: safeJsonParse<MealSlot[]>(row.slotsJson, []),
+    parallelSteps: safeJsonParse<ParallelTimelineStep[] | null>(row.parallelStepsJson, null),
+    shoppingState: safeJsonParse<ShoppingState | null>(row.shoppingStateJson, null),
     updatedAt: row.updatedAt,
   };
 }
@@ -214,9 +237,9 @@ export function parseDailyMenu(row: DailyMenu): ParsedDailyMenu {
 export function dailyMenuToInsert(menu: ParsedDailyMenu): NewDailyMenu {
   return {
     date: menu.date,
-    servings: menu.servings || 3,
-    contextMemo: menu.contextMemo || null,
-    slotsJson: JSON.stringify(menu.slots || []),
+    servings: menu.servings ?? 3,
+    contextMemo: menu.contextMemo ?? null,
+    slotsJson: JSON.stringify(menu.slots ?? []),
     parallelStepsJson: menu.parallelSteps ? JSON.stringify(menu.parallelSteps) : null,
     shoppingStateJson: menu.shoppingState ? JSON.stringify(menu.shoppingState) : null,
     updatedAt: menu.updatedAt || new Date().toISOString(),

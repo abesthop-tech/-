@@ -101,14 +101,12 @@ export async function ensureDatabaseInitialized(): Promise<void> {
       await client.execute(statement);
     }
 
-    // 2. Check if dishes or daily_menus table needs initial seeding
+    // 2. Check if dishes table needs initial seeding
     const result = await client.execute('SELECT COUNT(*) as count FROM dishes;');
-    const menuResult = await client.execute('SELECT COUNT(*) as count FROM daily_menus;');
-    const count = Number(result.rows[0]?.count ?? 0);
-    const menuCount = Number(menuResult.rows[0]?.count ?? 0);
+    const dishCount = Number(result.rows[0]?.count ?? 0);
 
-    // 3. Auto-seed if brand new or incomplete database
-    if (count === 0 || menuCount < 14) {
+    // 3. Auto-seed strictly on brand new, empty database (prevent spurious re-seeding)
+    if (dishCount === 0) {
       await seedDatabase(db);
     }
   })();
