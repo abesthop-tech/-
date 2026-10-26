@@ -15,7 +15,8 @@ export interface DishWithIngredients {
   role: 'main' | 'side' | 'soup' | 'other' | string;
   name?: string;
   baseServings?: number;
-  ingredients: Array<IngredientItem | { name: string; amount: string; isStaple?: boolean }>;
+  ingredients?: Array<IngredientItem | { name: string; amount: string; isStaple?: boolean }>;
+  steps?: string[];
 }
 
 export interface ParsedAmount {
@@ -23,6 +24,9 @@ export interface ParsedAmount {
   unit: string;
   raw: string;
   isQualitative: boolean;
+  note?: string;
+  rangeMin?: number | null;
+  rangeMax?: number | null;
 }
 
 // ----------------------------------------------------------------------------
@@ -74,6 +78,7 @@ export function normalizeJapaneseText(str: string): string {
     .replace(/／/g, '/')
     .replace(/（/g, '(')
     .replace(/）/g, ')')
+    .replace(/[～~]/g, '〜')
     .replace(/½/g, '1/2')
     .replace(/¼/g, '1/4')
     .replace(/¾/g, '3/4')
@@ -91,9 +96,11 @@ export function normalizeIngredientName(rawName: string): string {
 }
 
 /**
- * Parses numeric fractions or decimals from strings like "1/2", "0.5", "1と1/2".
+ * Parses numeric fractions or decimals strictly from strings like "1/2", "0.5", "1と1/2".
+ * Returns null if the string contains non-numeric suffix characters or wave dashes.
  */
 export function parseNumericValue(valStr: string): number | null {
+  if (!valStr) return null;
   const clean = valStr.trim();
   if (!clean) return null;
 
@@ -114,15 +121,29 @@ export function parseNumericValue(valStr: string): number | null {
     return den !== 0 ? num / den : null;
   }
 
-  // Standard integer or float: "300", "1.5"
-  const num = parseFloat(clean);
-  return isNaN(num) ? null : num;
+  // Strict integer or float: "300", "1.5", "0.25"
+  if (/^\d+(?:\.\d+)?$/.test(clean)) {
+    const num = parseFloat(clean);
+    return isNaN(num) ? null : num;
+  }
+
+  return null;
 }
 
 /**
  * Parses a Japanese culinary amount string and scales it by the given ratio.
+ * Handles prefix units, suffix units, ranges (e.g. 2〜3個 -> 4〜6個),
+ * and parenthetical notes (e.g. 1束(約200g) -> 2束(約400g)).
  */
 export function parseJapaneseAmount(rawAmount: string, ratio: number = 1): ParsedAmount {
+  if (!rawAmount || !rawAmount.trim()) {
+    return {
+      numeric: null,
+      unit: '',
+      raw: '',
+      isQualitative: true,
+    };
+  }
   const normalized = normalizeJapaneseText(rawAmount);
 
   // Check for qualitative unscaled amounts
@@ -135,6 +156,49 @@ export function parseJapaneseAmount(rawAmount: string, ratio: number = 1): Parse
         isQualitative: true,
       };
     }
+  }
+
+  // Parenthetical note preservation: e.g. "1束(約200g)", "2枚(500g)", "1丁(水切り後)"
+  const parenMatch = normalized.match(/^([^\(]+)\s*\(([^\)]+)\)$/);
+  if (parenMatch) {
+    const mainPart = parenMatch[1].trim();
+    const notePart = parenMatch[2].trim();
+
+    // Recursively parse the main outer portion
+    const mainParsed = parseJapaneseAmount(mainPart, ratio);
+
+    // Scale inner note if it represents a quantity (e.g. "約200g", "500g", "正味200g")
+    let innerScaled = notePart;
+    const innerQtyMatch = notePart.match(
+      /^(約|正味|各)?\s*([\d\/\.と\s]+)\s*(g|ml|cc|kg|本|個|cm|切れ)(.*)$/i
+    );
+    if (innerQtyMatch) {
+      const prefix = innerQtyMatch[1] || '';
+      const subVal = parseNumericValue(innerQtyMatch[2]);
+      const subUnit = innerQtyMatch[3];
+      const extra = innerQtyMatch[4] || '';
+      if (subVal !== null) {
+        const scaledSub = subVal * ratio;
+        const formattedSub = formatNumericAmount(scaledSub);
+        innerScaled = `${prefix}${formattedSub}${subUnit}${extra}`;
+      }
+    }
+
+    const noteStr = `(${innerScaled})`;
+    const mainStr =
+      mainParsed.numeric !== null
+        ? `${formatNumericAmount(mainParsed.numeric)}${mainParsed.unit}`
+        : mainParsed.raw;
+
+    return {
+      numeric: mainParsed.numeric,
+      unit: mainParsed.unit,
+      raw: `${mainStr}${noteStr}`,
+      note: noteStr,
+      isQualitative: mainParsed.isQualitative,
+      rangeMin: mainParsed.rangeMin,
+      rangeMax: mainParsed.rangeMax,
+    };
   }
 
   // Handle prefix units: "大さじ2", "小さじ1/2", "カップ1"
@@ -150,31 +214,55 @@ export function parseJapaneseAmount(rawAmount: string, ratio: number = 1): Parse
     };
   }
 
-  // Handle suffix units: "300g", "1/2本", "1個", "1枚", "1丁", "1束", "3切れ", "1パック"
-  // Also matches compound weights: "2枚(500g)"
-  const compoundMatch = normalized.match(/^([\d\/\.と\s]+)([^\d\(\)]+)\s*\(([\d\/\.と\s]+)(g|ml|cc|kg)\)$/i);
-  if (compoundMatch) {
-    const mainVal = parseNumericValue(compoundMatch[1]);
-    const mainUnit = compoundMatch[2].trim();
-    const subVal = parseNumericValue(compoundMatch[3]);
-    const subUnit = compoundMatch[4].trim();
-
-    const scaledMain = mainVal !== null ? mainVal * ratio : null;
-    const scaledSub = subVal !== null ? subVal * ratio : null;
-
-    if (scaledMain !== null && scaledSub !== null) {
-      const formattedMain = formatNumericAmount(scaledMain);
-      const formattedSub = formatNumericAmount(scaledSub);
+  // Handle range with suffix unit: "2〜3個", "1〜2本", "100〜150g", "1/2〜1個"
+  const rangeWithUnitMatch = normalized.match(
+    /^([\d\/\.と\s]+)\s*[〜\-]\s*([\d\/\.と\s]+)\s*([a-zA-Z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)$/
+  );
+  if (rangeWithUnitMatch) {
+    const minVal = parseNumericValue(rangeWithUnitMatch[1]);
+    const maxVal = parseNumericValue(rangeWithUnitMatch[2]);
+    const unit = rangeWithUnitMatch[3].trim();
+    if (minVal !== null && maxVal !== null) {
+      const scaledMin = minVal * ratio;
+      const scaledMax = maxVal * ratio;
+      const formattedMin = formatNumericAmount(scaledMin);
+      const formattedMax = formatNumericAmount(scaledMax);
       return {
-        numeric: scaledMain,
-        unit: mainUnit,
-        raw: `${formattedMain}${mainUnit}(${formattedSub}${subUnit})`,
+        numeric: null,
+        unit: unit,
+        raw: `${formattedMin}〜${formattedMax}${unit}`,
         isQualitative: false,
+        rangeMin: scaledMin,
+        rangeMax: scaledMax,
       };
     }
   }
 
-  const suffixMatch = normalized.match(/^([\d\/\.と\s]+)\s*([a-zA-Z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)$/);
+  // Handle range without unit: "2〜3", "1〜2"
+  const rangeWithoutUnitMatch = normalized.match(/^([\d\/\.と\s]+)\s*[〜\-]\s*([\d\/\.と\s]+)$/);
+  if (rangeWithoutUnitMatch) {
+    const minVal = parseNumericValue(rangeWithoutUnitMatch[1]);
+    const maxVal = parseNumericValue(rangeWithoutUnitMatch[2]);
+    if (minVal !== null && maxVal !== null) {
+      const scaledMin = minVal * ratio;
+      const scaledMax = maxVal * ratio;
+      const formattedMin = formatNumericAmount(scaledMin);
+      const formattedMax = formatNumericAmount(scaledMax);
+      return {
+        numeric: null,
+        unit: '',
+        raw: `${formattedMin}〜${formattedMax}`,
+        isQualitative: false,
+        rangeMin: scaledMin,
+        rangeMax: scaledMax,
+      };
+    }
+  }
+
+  // Handle standard suffix units: "300g", "1/2本", "1個", "1枚", "1丁", "1束", "3切れ", "1パック"
+  const suffixMatch = normalized.match(
+    /^([\d\/\.と\s]+)\s*([a-zA-Z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)$/
+  );
   if (suffixMatch) {
     const val = parseNumericValue(suffixMatch[1]);
     const unit = suffixMatch[2].trim();
@@ -186,7 +274,7 @@ export function parseJapaneseAmount(rawAmount: string, ratio: number = 1): Parse
     };
   }
 
-  // Just numeric without unit
+  // Just numeric without unit: "3", "1.5"
   const justNum = parseNumericValue(normalized);
   if (justNum !== null) {
     return {
@@ -197,7 +285,7 @@ export function parseJapaneseAmount(rawAmount: string, ratio: number = 1): Parse
     };
   }
 
-  // Unparseable string fallback
+  // Unparseable string fallback (treated safely as qualitative descriptor)
   return {
     numeric: null,
     unit: '',
@@ -245,23 +333,34 @@ export function formatNumericAmount(val: number): string {
 }
 
 /**
- * Combines parsed totals into a consolidated amount string.
+ * Combines parsed totals into a consolidated amount string, preserving parenthetical notes.
  */
 export function formatConsolidatedAmount(
   totalUnits: Map<string, number>,
-  rawStrings: string[]
+  rawStrings: string[],
+  unitNotes?: Map<string, string[]>
 ): string {
   const parts: string[] = [];
 
   totalUnits.forEach((amount, unit) => {
     const formattedNum = formatNumericAmount(amount);
+    let partStr = '';
     if (unit === '大さじ' || unit === '小さじ' || unit === 'カップ') {
-      parts.push(`${unit}${formattedNum}`);
+      partStr = `${unit}${formattedNum}`;
     } else if (unit) {
-      parts.push(`${formattedNum}${unit}`);
+      partStr = `${formattedNum}${unit}`;
     } else {
-      parts.push(formattedNum);
+      partStr = formattedNum;
     }
+
+    if (unitNotes && unitNotes.has(unit)) {
+      const notes = unitNotes.get(unit)!;
+      if (notes.length > 0) {
+        partStr += notes.join('');
+      }
+    }
+
+    parts.push(partStr);
   });
 
   const uniqueRaws = Array.from(new Set(rawStrings));
@@ -285,6 +384,7 @@ export interface AggregatorOptions {
 
 /**
  * Scales, deduplicates, and partitions ingredients into Stage 1 (Buy) and Stage 2 (Staples).
+ * Resilient against undefined/null dishes or dish.ingredients arrays.
  */
 export function consolidateAndPartitionShoppingList(
   dishes: DishWithIngredients[],
@@ -294,9 +394,14 @@ export function consolidateAndPartitionShoppingList(
   const stapleDictionary = options.stapleList || DEFAULT_STAPLE_ITEMS;
   const safeTargetServings = Math.max(1, Math.min(8, targetServings || 3));
 
+  if (!dishes || !Array.isArray(dishes) || dishes.length === 0) {
+    return { mainItems: [], stapleItems: [] };
+  }
+
   interface AggregatedEntry {
     name: string;
     totalUnits: Map<string, number>;
+    unitNotes: Map<string, string[]>;
     rawStrings: string[];
     roles: Set<string>;
     isStaple: boolean;
@@ -305,12 +410,21 @@ export function consolidateAndPartitionShoppingList(
   const aggregatedMap = new Map<string, AggregatedEntry>();
 
   for (const dish of dishes) {
+    if (!dish) continue;
     const baseServings = Math.max(1, dish.baseServings || 3);
     const ratio = safeTargetServings / baseServings;
     const roleLabel =
-      dish.role === 'main' ? '主菜' : dish.role === 'side' ? '副菜' : dish.role === 'soup' ? '汁物' : dish.role || '主菜';
+      dish.role === 'main'
+        ? '主菜'
+        : dish.role === 'side'
+        ? '副菜'
+        : dish.role === 'soup'
+        ? '汁物'
+        : dish.role || '主菜';
 
-    for (const item of dish.ingredients) {
+    const ingredients = dish.ingredients || [];
+    for (const item of ingredients) {
+      if (!item || !item.name) continue;
       const normName = normalizeIngredientName(item.name);
       if (!normName) continue;
 
@@ -318,12 +432,13 @@ export function consolidateAndPartitionShoppingList(
         item.isStaple ||
         stapleDictionary.some((staple) => normName.includes(staple) || staple.includes(normName));
 
-      const parsed = parseJapaneseAmount(item.amount, ratio);
+      const parsed = parseJapaneseAmount(item.amount || '', ratio);
 
       if (!aggregatedMap.has(normName)) {
         aggregatedMap.set(normName, {
           name: normName,
           totalUnits: new Map(),
+          unitNotes: new Map(),
           rawStrings: [],
           roles: new Set([roleLabel]),
           isStaple: isConfiguredStaple,
@@ -339,8 +454,17 @@ export function consolidateAndPartitionShoppingList(
       if (parsed.numeric !== null && !parsed.isQualitative) {
         const cur = entry.totalUnits.get(parsed.unit) || 0;
         entry.totalUnits.set(parsed.unit, cur + parsed.numeric);
+        if (parsed.note) {
+          const notes = entry.unitNotes.get(parsed.unit) || [];
+          if (!notes.includes(parsed.note)) {
+            notes.push(parsed.note);
+          }
+          entry.unitNotes.set(parsed.unit, notes);
+        }
       } else {
-        entry.rawStrings.push(parsed.raw);
+        if (parsed.raw) {
+          entry.rawStrings.push(parsed.raw);
+        }
       }
     }
   }
@@ -351,7 +475,11 @@ export function consolidateAndPartitionShoppingList(
   let idCounter = 1;
 
   aggregatedMap.forEach((entry) => {
-    const formattedAmount = formatConsolidatedAmount(entry.totalUnits, entry.rawStrings);
+    const formattedAmount = formatConsolidatedAmount(
+      entry.totalUnits,
+      entry.rawStrings,
+      entry.unitNotes
+    );
     const roleStr = Array.from(entry.roles).join('・');
 
     if (entry.isStaple) {
@@ -385,6 +513,7 @@ export function promoteStapleToMain(
   state: ShoppingState,
   stapleId: number
 ): ShoppingState {
+  if (!state || !state.stapleItems) return state;
   const stapleIdx = state.stapleItems.findIndex((s) => s.id === stapleId);
   if (stapleIdx === -1) return state;
 
@@ -405,7 +534,7 @@ export function promoteStapleToMain(
   };
 
   return {
-    mainItems: [...state.mainItems, newMainItem],
+    mainItems: [...(state.mainItems || []), newMainItem],
     stapleItems: newStapleList,
   };
 }
@@ -417,6 +546,7 @@ export function demotePromotedStaple(
   state: ShoppingState,
   mainItemId: number
 ): ShoppingState {
+  if (!state || !state.mainItems) return state;
   const itemIdx = state.mainItems.findIndex((i) => i.id === mainItemId && i.promotedFromStaple);
   if (itemIdx === -1) return state;
 
@@ -431,7 +561,7 @@ export function demotePromotedStaple(
 
   return {
     mainItems: newMainList,
-    stapleItems: [...state.stapleItems, restoredStaple],
+    stapleItems: [...(state.stapleItems || []), restoredStaple],
   };
 }
 
@@ -442,6 +572,7 @@ export function toggleShoppingItemChecked(
   state: ShoppingState,
   itemId: number
 ): ShoppingState {
+  if (!state || !state.mainItems) return state;
   return {
     ...state,
     mainItems: state.mainItems.map((item) =>
@@ -460,13 +591,13 @@ export function toggleShoppingItemChecked(
  * 【10/26 買い物メモ】
  * ・豚バラ薄切り（300g）
  * ・大根（1/2本）
- * ・小松菜（1束）
+ * ・小松菜（2束(約400g)）
  */
 export function formatLineShoppingMemo(
   items: ShoppingStateItem[],
   dateStr?: string
 ): string {
-  // Format MM/DD from YYYY-MM-DD or use default
+  const safeItems = items || [];
   let displayDate = '本日';
   if (dateStr) {
     const parts = dateStr.split('-');
@@ -483,7 +614,7 @@ export function formatLineShoppingMemo(
   }
 
   const header = `【${displayDate} 買い物メモ】`;
-  const unchecked = items.filter((item) => !item.checked);
+  const unchecked = safeItems.filter((item) => !item.checked);
 
   if (unchecked.length === 0) {
     return `${header}\n・（購入する品はありません）`;

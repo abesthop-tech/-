@@ -56,35 +56,81 @@ describe('Parallel Timeline DAG Scheduler', () => {
     },
   ];
 
-  it('generates a 3-phase timeline matching UI mock specifications', () => {
+  it('generates a 3-phase timeline matching UI mock specifications dynamically', () => {
     const result = scheduleParallelCookingTimeline(seedDishes, 3);
 
     expect(result.estimatedMinutes).toBe(23);
     expect(result.steps).toHaveLength(3);
 
-    // Phase 1
+    // Phase 1: Dynamic microwave extraction & cutting board hygiene
     const p1 = result.steps[0];
     expect(p1.phase).toBe('下ごしらえ（まとめて切る・レンジ）');
     expect(p1.dishTag).toBe('全品共通');
     expect(p1.timeWindow).toBe('0:00〜7:00');
     expect(p1.instruction).toContain('大根');
-    expect(p1.instruction).toContain('レンジ600Wで5分');
+    expect(p1.instruction).toMatch(/(?:電子レンジ|レンジ).*600W.*5分/);
 
-    // Phase 2
+    // Phase 2: Dynamic 2-burner stovetop allocation using actual dish names
     const p2 = result.steps[1];
     expect(p2.phase).toBe('副菜と汁物の火入れ');
     expect(p2.dishTag).toBe('副菜・汁物');
     expect(p2.timeWindow).toBe('7:00〜13:00');
     expect(p2.instruction).toContain('小鍋2つ');
-    expect(p2.instruction).toContain('小松菜と油揚げの煮びたし');
+    expect(p2.instruction).toContain(seedDishes[1].name); // '小松菜と油揚げのさっと煮びたし'
+    expect(p2.instruction).toContain(seedDishes[2].name); // '豆腐とわかめの味噌汁'
 
-    // Phase 3
+    // Phase 3: Dynamic main dish finishing
     const p3 = result.steps[2];
     expect(p3.phase).toBe('主菜の仕上げ（熱々で食卓へ）');
     expect(p3.dishTag).toBe('主菜');
     expect(p3.timeWindow).toBe('13:00〜23:00');
-    expect(p3.instruction).toContain('豚バラ肉');
-    expect(p3.instruction).toContain('照りが出るまで煮絡めて完成');
+    expect(p3.instruction).toContain('豚バラ');
+    expect(p3.instruction).toContain('完成');
+  });
+
+  it('dynamically schedules arbitrary dishes without hardcoded mock branches', () => {
+    const arbitraryDishes: DishScheduleInput[] = [
+      {
+        name: '鶏むね肉とブロッコリーの塩炒め',
+        role: 'main',
+        ingredients: [
+          { name: '鶏むね肉', amount: '300g' },
+          { name: 'ブロッコリー', amount: '1株' },
+        ],
+        steps: ['ブロッコリーをレンジで2分加熱。', '鶏肉を炒める。'],
+      },
+      {
+        name: '茄子の煮浸し',
+        role: 'side',
+        ingredients: [{ name: 'なす', amount: '2本' }],
+        steps: ['茄子を煮る。'],
+      },
+      {
+        name: '玉ねぎと卵のスープ',
+        role: 'soup',
+        ingredients: [
+          { name: '玉ねぎ', amount: '1/2個' },
+          { name: '卵', amount: '1個' },
+        ],
+        steps: ['スープを作る。'],
+      },
+    ];
+
+    const result = scheduleParallelCookingTimeline(arbitraryDishes, 3);
+    expect(result.steps).toHaveLength(3);
+    expect(result.estimatedMinutes).toBeGreaterThan(0);
+
+    // Dynamic Phase 1: Ingredients & Microwave
+    expect(result.steps[0].instruction).toContain('ブロッコリー');
+    expect(result.steps[0].instruction).toMatch(/レンジ/);
+    expect(result.steps[0].instruction).toContain('鶏むね肉');
+
+    // Dynamic Phase 2: Side & Soup
+    expect(result.steps[1].instruction).toContain('茄子の煮浸し');
+    expect(result.steps[1].instruction).toContain('玉ねぎと卵のスープ');
+
+    // Dynamic Phase 3: Main
+    expect(result.steps[2].instruction).toContain('鶏むね肉とブロッコリーの塩炒め');
   });
 
   it('enforces cutting board hygiene sequence (veggies -> tofu -> meat)', () => {

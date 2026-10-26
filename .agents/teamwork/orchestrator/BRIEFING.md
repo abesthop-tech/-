@@ -1,4 +1,4 @@
-# BRIEFING — 2026-10-26T04:24:30Z
+# BRIEFING — 2026-10-26T05:25:00Z
 
 ## Mission
 Decompose the implementation plan, dispatch specialists/workers to build and verify the kazoku-kondate cooking assistant web application, ensure all requirements R1-R5 and acceptance criteria are satisfied, run tests, and report back when finished.
@@ -30,12 +30,12 @@ Decompose the implementation plan, dispatch specialists/workers to build and ver
   0. Survey specifications and codebase [done]
   1. Milestone Decomposition & E2E Test Strategy (PROJECT.md & TEST_INFRA.md) [done]
   2. Milestone M1: Core Foundation & Database [DONE: Gate PASS, 103/103 tests pass, build code 0]
-  3. Milestone M2: Algorithmic Engines & Business Logic [in-progress: implementation worker running]
+  3. Milestone M2: Algorithmic Engines & Business Logic [in-progress: iteration 2 remediation worker running]
   4. Milestone M3: API Routes & Persistence Layer [pending]
   5. Milestone M4: High-Craft UI & Interactive Screens [pending]
   6. Milestone M5: Final Verification & Adversarial Hardening [pending]
 - **Current phase**: 2
-- **Current focus**: Milestone M2 Worker (5d21ca42-1c08-448d-aeaf-ae305d4d225f)
+- **Current focus**: Milestone M2 Iteration 2 Worker (c8edfc66-9b0c-4ca5-89ae-0312ad347707)
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
@@ -48,20 +48,21 @@ Decompose the implementation plan, dispatch specialists/workers to build and ver
 
 ## Current Parent
 - Conversation ID: cdd36f1a-23c1-488b-941b-d8cd28f90dde
-- Updated: 2026-10-26T03:28:10Z
+- Updated: 2026-10-26T05:10:19Z
 
 ## Key Decisions Made
 - Milestone M1 completed and Gate PASSED.
-- M2 Explorers completed blueprints for ics-parser, menu-planner, shopping-aggregator, timeline-scheduler, and gemini fallback.
-- Dispatched M2 Worker (`teamwork_preview_worker_m2`) to implement all pure TS algorithmic engines and unit tests.
+- M2 Iteration 1 Gate evaluated: Auditor CLEAN, Reviewer 1 & Challenger 1 APPROVE, Reviewer 2 & Challenger 2 REQUEST_CHANGES.
+- M2 Iteration 2 Explorers delivered complete drop-in replacement code and test alignment.
+- Dispatched M2 Iteration 2 Worker (`teamwork_preview_worker_m2_it2`) to apply dynamic DAG scheduler and range arithmetic fixes.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| m2_exp_1 | teamwork_preview_explorer | M2 Calendar & Classifier Explorer | completed | 9fcce19d-5681-45c5-b564-c0e89a9d7b0f |
-| m2_exp_2 | teamwork_preview_explorer | M2 Menu Planner & Variety Balance | completed | 6ccd9186-f587-4aaa-a281-6bb696150976 |
-| m2_exp_3 | teamwork_preview_explorer | M2 Shopping, Timeline & AI Fallback | completed | 3a58e75f-cb18-4c90-ba9b-16ee7841d9fc |
-| m2_worker | teamwork_preview_worker | M2 Implementation & Tests | in-progress | 5d21ca42-1c08-448d-aeaf-ae305d4d225f |
+| m2_it2_exp_1 | teamwork_preview_explorer | M2 Dynamic DAG Timeline Blueprint | completed | a2dab655-8982-4850-aeda-57ba546feed4 |
+| m2_it2_exp_2 | teamwork_preview_explorer | M2 Shopping Range Scaling Blueprint | completed | 5a373755-d9a1-4c4d-b986-98b22dfee7f9 |
+| m2_it2_exp_3 | teamwork_preview_explorer | M2 Test Alignment & Regression Shield | completed | d59914bb-d0a0-4057-b0cd-9c6c8afab6c4 |
+| m2_it2_worker | teamwork_preview_worker | M2 Remediation Implementation | in-progress | c8edfc66-9b0c-4ca5-89ae-0312ad347707 |
 
 ## Active Timers
 - Heartbeat cron: 35a3dc7b-a199-49dc-b838-a1010ac73ac1/task-194
