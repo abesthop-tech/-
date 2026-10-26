@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-canvas: #FAF9F6;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F3F2EE;
+  --border-subtle: #E6E4DD;
+  --border-strong: #C7C4B8;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-muted: #78716C;
+  --accent-primary: #C2410C;
+  --accent-hover: #9A3412;
+  --accent-subtle: #FFF7ED;
+  --glow-color: rgba(194, 65, 12, 0.06);
+  --dot-color: rgba(28, 25, 23, 0.045);
+  --watermark-color: rgba(28, 25, 23, 0.035);
+}
+
+.dark {
+  --bg-canvas: #151821;
+  --bg-surface: #1C202B;
+  --bg-subtle: #242936;
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --text-primary: #F4F5F7;
+  --text-secondary: #A3ACBF;
+  --text-muted: #6E788C;
+  --accent-primary: #EA580C;
+  --accent-hover: #C2410C;
+  --accent-subtle: rgba(234, 88, 12, 0.14);
+  --glow-color: rgba(234, 88, 12, 0.08);
+  --dot-color: rgba(255, 255, 255, 0.035);
+  --watermark-color: rgba(255, 255, 255, 0.03);
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  background-image:
+    radial-gradient(circle at 50% 0%, var(--glow-color) 0%, transparent 65%),
+    radial-gradient(var(--dot-color) 1px, transparent 1px);
+  background-size: 100% 100%, 20px 20px;
+  min-height: 100vh;
+}
+
+@layer utilities {
+  .palt {
+    font-feature-settings: "palt" 1;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
