@@ -60,8 +60,8 @@
 
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Core Foundation & Database | Git init, Next.js 14 setup, Drizzle ORM schema, SQLite client, seed data, passcode middleware | none | IN_PROGRESS |
-| M2 | Algorithmic Engines & Business Logic | `.ics` parser & classifier, menu scoring engine, portion scaling & 2-stage shopping aggregator, parallel cooking DAG scheduler, deterministic AI fallback | M1 | PLANNED |
+| M1 | Core Foundation & Database | Git init, Next.js 14 setup, Drizzle ORM schema, SQLite client, seed data, passcode middleware | none | DONE |
+| M2 | Algorithmic Engines & Business Logic | `.ics` parser & classifier, menu scoring engine, portion scaling & 2-stage shopping aggregator, parallel cooking DAG scheduler, deterministic AI fallback | M1 | IN_PROGRESS |
 | M3 | API Routes & Persistence Layer | Route handlers: `/api/menu`, `/api/cooking/timeline`, `/api/recipes`, `/api/recipes/ocr`, `/api/recipes/import-url`, `/api/ics-import` | M2 | PLANNED |
 | M4 | High-Craft UI & Interactive Screens | Warm Editorial/Dark theming, header nav, servings stepper, 3 main tabs (`献立`, `買い物`, `調理工程`), Tier 2 drawers, Tier 3 settings modal | M3 | PLANNED |
 | M5 | Final Milestone: E2E Verification & Adversarial Hardening | Phase 1: 100% E2E tests pass (Tiers 1-4). Phase 2: Tier 5 adversarial coverage hardening. Forensic integrity audit. Production build (`npm run build`). | M4, E2E | PLANNED |
