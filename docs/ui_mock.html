@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>献立・料理支援アプリ UIモック</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-canvas: #FAF9F6;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F3F2EE;
+      --border-subtle: #E6E4DD;
+      --border-strong: #C7C4B8;
+      --text-primary: #1C1917;
+      --text-secondary: #57534E;
+      --text-muted: #78716C;
+      --accent-primary: #C2410C;
+      --accent-hover: #9A3412;
+      --accent-subtle: #FFF7ED;
+      --glow-color: rgba(194, 65, 12, 0.06);
+      --dot-color: rgba(28, 25, 23, 0.045);
+      --watermark-color: rgba(28, 25, 23, 0.035);
+    }
+
+    html.dark {
+      --bg-canvas: #151821;
+      --bg-surface: #1C202B;
+      --bg-subtle: #242936;
+      --border-subtle: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.22);
+      --text-primary: #F4F5F7;
+      --text-secondary: #A3ACBF;
+      --text-muted: #6E788C;
+      --accent-primary: #EA580C;
+      --accent-hover: #C2410C;
+      --accent-subtle: rgba(234, 88, 12, 0.14);
+      --glow-color: rgba(234, 88, 12, 0.08);
+      --dot-color: rgba(255, 255, 255, 0.035);
+      --watermark-color: rgba(255, 255, 255, 0.03);
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'BIZ UDPGothic', 'Noto Sans JP', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background-image:
+        radial-gradient(circle at 50% 0%, var(--glow-color) 0%, transparent 65%),
+        radial-gradient(var(--dot-color) 1px, transparent 1px);
+      background-size: 100% 100%, 20px 20px;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .palt {
+      font-feature-settings: "palt" 1;
+    }
+
+    .tabular {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .surface-sheet {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .subtle-box {
+      background-color: var(--bg-subtle);
+    }
+
+    .divider-y > * + * {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .input-field {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .input-field:focus {
+      outline: 2px solid var(--accent-primary);
+      outline-offset: -1px;
+    }
+
+    .btn-primary {
+      background-color: var(--accent-primary);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+    }
+    .btn-secondary:hover {
+      background-color: var(--bg-subtle);
+    }
+
+    .btn-ghost {
+      color: var(--text-secondary);
+    }
+    .btn-ghost:hover {
+      background-color: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-16 relative overflow-x-hidden">
+
+  <!-- Watermark Typography (Spatial Atmosphere) -->
+  <div id="watermark" class="fixed top-10 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 pointer-events-none select-none z-0 flex justify-end overflow-hidden">
+    <span class="text-[112px] font-bold tracking-tighter leading-none tabular" style="color: var(--watermark-color);">10.26</span>
+  </div>
+
+  <!-- Mock Preview Controls Bar (For checking Smartphone vs PC & Theme) -->
+  <div class="sticky top-0 z-30 border-b px-4 py-2 text-xs flex items-center justify-between" style="background-color: var(--bg-surface); border-color: var(--border-subtle);">
+    <div class="flex items-center gap-2">
+      <span class="font-medium" style="color: var(--text-muted);">プレビュー表示:</span>
+      <button onclick="setViewport('mobile')" id="vp-mobile" class="px-2.5 py-1 rounded-md font-medium transition-colors" style="background-color: var(--bg-subtle); color: var(--text-primary);">スマホ幅 (390px)</button>
+      <button onclick="setViewport('pc')" id="vp-pc" class="px-2.5 py-1 rounded-md font-medium transition-colors" style="color: var(--text-secondary);">PC・タブレット幅 (640px)</button>
+    </div>
+    <button onclick="toggleTheme()" class="px-2.5 py-1 rounded-md border text-xs font-medium flex items-center gap-1.5" style="border-color: var(--border-strong); color: var(--text-primary);">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+      </svg>
+      <span id="theme-label">ダーク切替</span>
+    </button>
+  </div>
+
+  <!-- Main Single-Column Container (Identical layout on Smartphone and PC) -->
+  <main id="app-container" class="relative z-10 mx-auto w-full max-w-[390px] px-3.5 pt-5 transition-all duration-200">
+
+    <!-- TIER 1 HEADER: Date Navigation & Servings -->
+    <header class="flex items-baseline justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <button onclick="shiftDate(-1)" class="p-1.5 rounded-md btn-ghost" aria-label="前日">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg>
+        </button>
+        <div>
+          <div class="flex items-baseline gap-2">
+            <h1 id="date-heading" class="text-2xl font-bold tracking-tight tabular palt">10.26</h1>
+            <span id="day-label" class="text-sm font-semibold" style="color: var(--text-secondary);">月</span>
+            <span id="today-tag" class="text-xs font-medium px-1.5 py-0.5 rounded" style="background-color: var(--accent-subtle); color: var(--accent-primary);">今日</span>
+          </div>
+        </div>
+        <button onclick="shiftDate(1)" class="p-1.5 rounded-md btn-ghost" aria-label="翌日">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+        </button>
+      </div>
+
+      <!-- Servings Stepper -->
+      <div class="flex items-center gap-1.5">
+        <button onclick="changeServings(-1)" class="w-7 h-7 rounded-md btn-secondary flex items-center justify-center text-sm font-medium">−</button>
+        <span id="servings-display" class="text-sm font-semibold tabular px-1">3人分</span>
+        <button onclick="changeServings(1)" class="w-7 h-7 rounded-md btn-secondary flex items-center justify-center text-sm font-medium">＋</button>
+      </div>
+    </header>
+
+    <!-- TIER 1 PRIMARY NAVIGATION: 献立 | 買い物 | 調理工程 -->
+    <nav class="p-1 rounded-lg subtle-box grid grid-cols-3 gap-1 mb-4" style="border: 1px solid var(--border-subtle);">
+      <button onclick="switchMainTab('menu')" id="tab-btn-menu" class="py-2 text-sm font-semibold rounded-md transition-all surface-sheet">
+        献立
+      </button>
+      <button onclick="switchMainTab('shopping')" id="tab-btn-shopping" class="py-2 text-sm font-medium rounded-md transition-all tabular" style="color: var(--text-secondary);">
+        買い物 <span id="shop-count-badge" class="ml-0.5 text-xs">(5)</span>
+      </button>
+      <button onclick="switchMainTab('cooking')" id="tab-btn-cooking" class="py-2 text-sm font-medium rounded-md transition-all" style="color: var(--text-secondary);">
+        調理工程
+      </button>
+    </nav>
+
+    <!-- ==========================================
+         VIEW 1: 献立 (MENU VIEW - PRIMARY FOCUS)
+         ========================================== -->
+    <section id="view-menu" class="space-y-4">
+
+      <!-- Context Input Bar (Leftovers / Requests) -->
+      <div class="surface-sheet rounded-lg p-3.5 space-y-3">
+        <div>
+          <label for="context-input" class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary);">
+            使いたい食材・今日の要望
+          </label>
+          <div class="flex gap-2">
+            <input
+              id="context-input"
+              type="text"
+              value="大根、豚バラ"
+              placeholder="例：キャベツ、魚系、さっぱり"
+              class="input-field w-full rounded-md px-3 py-1.5 text-sm"
+            />
+            <button onclick="reproposeUnlocked()" class="btn-primary shrink-0 px-3.5 py-1.5 rounded-md text-sm font-medium transition-colors">
+              提案する
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs" style="color: var(--text-muted);">
+          <span>前日: 鶏の唐揚げ（肉・揚げ物）を考慮中</span>
+          <button onclick="proposeNewChallenge()" class="font-medium underline underline-offset-2 hover:opacity-80" style="color: var(--accent-primary);">
+            ＋ 新レシピを1品混ぜる
+          </button>
+        </div>
+      </div>
+
+      <!-- 3-Slot Dish List (1px Divider List - No Nested Cards) -->
+      <div class="surface-sheet rounded-lg divider-y overflow-hidden" id="menu-slots-container">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Quick Action to go to Shopping or Cooking -->
+      <div class="flex items-center justify-between pt-1">
+        <span class="text-xs" style="color: var(--text-muted);">確定すると自動でカレンダー履歴に記録されます</span>
+        <button onclick="switchMainTab('shopping')" class="btn-secondary px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1">
+          <span>買い物リストへ</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 2: 買い物 (2-STAGE SHOPPING LIST)
+         ========================================== -->
+    <section id="view-shopping" class="space-y-4 hidden">
+
+      <!-- Stage 1: Main Shopping List (買うもの) -->
+      <div class="surface-sheet rounded-lg overflow-hidden">
+        <div class="px-4 py-3 flex items-center justify-between" style="border-bottom: 1px solid var(--border-subtle);">
+          <div class="flex items-baseline gap-2">
+            <h2 class="text-base font-semibold">買うもの</h2>
+            <span id="main-shop-counter" class="text-xs tabular" style="color: var(--text-muted);">5点</span>
+          </div>
+          <button onclick="copyForLine()" class="btn-primary px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5A3.375 3.375 0 0 0 6.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0 0 15 2.25h-1.5a2.251 2.251 0 0 0-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 0 0-9-9Z"/></svg>
+            <span>LINE用にコピー</span>
+          </button>
+        </div>
+
+        <div id="main-shopping-list" class="divider-y">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Stage 2: Household Staples Check (家にあるかも？確認枠) -->
+      <div class="surface-sheet rounded-lg overflow-hidden">
+        <div class="px-4 py-2.5 subtle-box flex items-center justify-between" style="border-bottom: 1px solid var(--border-subtle);">
+          <h3 class="text-xs font-semibold" style="color: var(--text-secondary);">家にあるかも（常備野菜・調味料の残量確認）</h3>
+          <span class="text-xs" style="color: var(--text-muted);">タップで「買うもの」へ追加</span>
+        </div>
+        <div id="staple-shopping-list" class="p-3 flex flex-wrap gap-2">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- LINE Copy Preview Box -->
+      <div id="line-toast" class="hidden surface-sheet rounded-lg p-3.5 text-xs space-y-1.5" style="border-color: var(--accent-primary);">
+        <div class="flex items-center justify-between font-semibold" style="color: var(--accent-primary);">
+          <span>クリップボードにコピーしました（LINE貼付イメージ）</span>
+          <button onclick="document.getElementById('line-toast').classList.add('hidden')" style="color: var(--text-muted);">閉じる</button>
+        </div>
+        <pre id="line-preview-text" class="whitespace-pre-wrap font-sans leading-relaxed pt-1" style="color: var(--text-primary);"></pre>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 3: 調理工程 (PARALLEL TIMELINE & RECIPE)
+         ========================================== -->
+    <section id="view-cooking" class="space-y-4 hidden">
+
+      <!-- Mode Switcher: まとめ工程 vs 料理別 -->
+      <div class="flex items-center justify-between">
+        <div class="inline-flex rounded-md p-0.5 subtle-box" style="border: 1px solid var(--border-subtle);">
+          <button onclick="setCookingMode('timeline')" id="cook-mode-timeline" class="px-3 py-1 text-xs font-semibold rounded surface-sheet">
+            まとめ工程（3品並行）
+          </button>
+          <button onclick="setCookingMode('individual')" id="cook-mode-individual" class="px-3 py-1 text-xs font-medium rounded" style="color: var(--text-secondary);">
+            料理別に見る
+          </button>
+        </div>
+        <span class="text-xs font-medium tabular" style="color: var(--text-secondary);">目安 25分</span>
+      </div>
+
+      <!-- Parallel Timeline View -->
+      <div id="cooking-timeline-view" class="surface-sheet rounded-lg divider-y overflow-hidden">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Individual Recipe View -->
+      <div id="cooking-individual-view" class="surface-sheet rounded-lg divider-y overflow-hidden hidden">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TIER 2: SUBDUED SECONDARY NAVIGATION
+         (レシピ帳・作ってみたい / カレンダー履歴)
+         ========================================== -->
+    <section class="mt-8 pt-5" style="border-top: 1px solid var(--border-subtle);">
+      <div class="grid grid-cols-2 gap-2.5">
+        <button onclick="openDrawer('stock')" class="btn-secondary rounded-lg p-3 text-left transition-colors flex items-center justify-between">
+          <div>
+            <div class="text-sm font-semibold">レシピ帳・追加</div>
+            <div class="text-xs mt-0.5 tabular" style="color: var(--text-muted);">定番 42 ・ 作ってみたい 5</div>
+          </div>
+          <svg class="w-4 h-4 shrink-0" style="color: var(--text-muted);" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+        </button>
+
+        <button onclick="openDrawer('history')" class="btn-secondary rounded-lg p-3 text-left transition-colors flex items-center justify-between">
+          <div>
+            <div class="text-sm font-semibold">カレンダー履歴</div>
+            <div class="text-xs mt-0.5 tabular" style="color: var(--text-muted);">過去の献立を振り返る</div>
+          </div>
+          <svg class="w-4 h-4 shrink-0" style="color: var(--text-muted);" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TIER 3: UNOBTRUSIVE FOOTER SETTINGS
+         (Googleカレンダー取込 / 常備品設定)
+         ========================================== -->
+    <footer class="mt-6 text-center">
+      <button onclick="openDrawer('settings')" class="text-xs underline underline-offset-4 py-2 transition-opacity hover:opacity-80" style="color: var(--text-muted);">
+        Googleカレンダー(.ics)取込・常備品リスト・合言葉設定
+      </button>
+    </footer>
+
+  </main>
+
+  <!-- ==========================================
+       MODAL / DRAWER OVERLAY (For Tier 2 & Tier 3)
+       ========================================== -->
+  <div id="drawer-backdrop" class="fixed inset-0 z-40 bg-black/40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="surface-sheet w-full max-w-lg rounded-t-xl sm:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="px-4 py-3 flex items-center justify-between" style="border-bottom: 1px solid var(--border-subtle);">
+        <h2 id="drawer-title" class="text-base font-semibold">レシピ帳・作ってみたいリスト</h2>
+        <button onclick="closeDrawer()" class="px-2.5 py-1 rounded-md btn-ghost text-xs font-medium">閉じる</button>
+      </div>
+      <div id="drawer-body" class="p-4 overflow-y-auto space-y-4 text-sm">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- State & Mock Data (DRY Data-Driven) ---
+    let servings = 3;
+    let dayOffset = 0;
+    const days = [
+      { date: '10.25', dow: '日', tag: '昨日' },
+      { date: '10.26', dow: '月', tag: '今日' },
+      { date: '10.27', dow: '火', tag: '明日' }
+    ];
+    let currentDayIdx = 1;
+
+    const dishSlots = [
+      {
+        role: '主菜',
+        locked: true,
+        lockReason: '祖父が担当・固定中',
+        currentIdx: 0,
+        candidates: [
+          {
+            name: '豚バラと大根のこっくり照り煮',
+            source: '山本ゆりさんレシピ本 (p.42)',
+            historyMeta: '過去8回 · 前回 9/14',
+            badge: '我が家の定番',
+            ingredients: ['豚バラ薄切り 300g', '大根 1/2本'],
+            steps: [
+              '大根は1.5cm厚さのいちょう切りにし、耐熱皿に並べてラップをし電子レンジ(600W)で5分加熱する。',
+              '豚バラ肉は4cm幅に切る。フライパンに油をひかず豚バラを炒め、焼き色がついたら大根を加える。',
+              '砂糖・酒・みりん・醤油・オイスターソースを加え、強めの中火で照りが出るまで煮絡める。'
+            ]
+          },
+          {
+            name: '鮭とキャベツのちゃんちゃん焼き',
+            source: '白ごはん.com',
+            historyMeta: '過去4回 · 前回 10/02',
+            badge: '信頼サイト',
+            ingredients: ['生鮭 3切れ', 'キャベツ 1/4個', 'しめじ 1パック'],
+            steps: [
+              'キャベツはざく切り、しめじは石づきを取る。味噌・みりん・砂糖を混ぜ合わせておく。',
+              'フライパンに鮭を並べて両面焼き、周りに野菜を広げて味噌だれを回しかけ、蓋をして5分蒸し焼きにする。'
+            ]
+          }
+        ]
+      },
+      {
+        role: '副菜',
+        locked: false,
+        lockReason: '',
+        currentIdx: 0,
+        candidates: [
+          {
+            name: '小松菜と油揚げのさっと煮びたし',
+            source: '白ごはん.com',
+            historyMeta: '過去11回 · 前回 10/05',
+            badge: '我が家の定番',
+            ingredients: ['小松菜 1束', '油揚げ 1枚'],
+            steps: [
+              '小松菜は4cm長さ、油揚げは短冊切りにする。',
+              '鍋にだし汁・薄口醤油・みりんを沸かし、油揚げと小松菜の茎から入れて2分煮る。'
+            ]
+          },
+          {
+            name: 'トマトとツナのポン酢和え',
+            source: 'クラシル公式',
+            historyMeta: '初挑戦（作ってみたいリスト）',
+            badge: '新レシピ挑戦',
+            ingredients: ['トマト 2個', 'ツナ缶 1缶', '大葉 5枚'],
+            steps: [
+              'トマトは一口大の乱切りにし、大葉は千切りにする。',
+              'ボウルにトマト・油を切ったツナ・ポン酢・ごま油を入れてさっと和える。'
+            ]
+          },
+          {
+            name: 'きゅうりとわかめの酢の物',
+            source: 'AI標準レシピ（微調整済）',
+            historyMeta: '過去2回 · 前回 8/19',
+            badge: 'カレンダー履歴',
+            ingredients: ['きゅうり 2本', '乾燥わかめ 大さじ2'],
+            steps: [
+              'きゅうりは輪切りにして塩もみし、水気を絞る。わかめは水で戻す。',
+              '酢・砂糖・醤油で和える。'
+            ]
+          }
+        ]
+      },
+      {
+        role: '汁物',
+        locked: false,
+        lockReason: '',
+        currentIdx: 0,
+        candidates: [
+          {
+            name: '豆腐とわかめの味噌汁',
+            source: '家庭の定番',
+            historyMeta: '過去34回 · 前回 10/21',
+            badge: '我が家の定番',
+            ingredients: ['絹ごし豆腐 1丁', '長ねぎ 1/2本'],
+            steps: [
+              'だし汁を沸かし、さいの目に切った豆腐と小口切りの長ねぎを入れる。',
+              '火を弱めて味噌を溶き入れ、乾燥わかめを加える。'
+            ]
+          },
+          {
+            name: 'かきたま中華スープ',
+            source: '山本ゆりさんブログ',
+            historyMeta: '過去6回 · 前回 9/28',
+            badge: '我が家の定番',
+            ingredients: ['えのき 1/2袋'],
+            steps: [
+              '水と鶏ガラスープの素を沸かし、えのきを入れて火を通す。',
+              '水溶き片栗粉でとろみをつけ、溶き卵を回し入れる。'
+            ]
+          }
+        ]
+      }
+    ];
+
+    let mainShoppingItems = [
+      { id: 1, name: '豚バラ薄切り', amount: '300g', dish: '主菜', checked: false },
+      { id: 2, name: '大根', amount: '1/2本', dish: '主菜', checked: false },
+      { id: 3, name: '小松菜', amount: '1束', dish: '副菜', checked: false },
+      { id: 4, name: '油揚げ', amount: '1枚', dish: '副菜', checked: false },
+      { id: 5, name: '絹ごし豆腐', amount: '1丁', dish: '汁物', checked: false }
+    ];
+
+    let stapleItems = [
+      { id: 101, name: '長ねぎ (1/2本)' },
+      { id: 102, name: '乾燥わかめ' },
+      { id: 103, name: 'しょうが' },
+      { id: 104, name: 'オイスターソース' },
+      { id: 105, name: '醤油・みりん・酒' },
+      { id: 106, name: '味噌・だしの素' }
+    ];
+
+    const parallelSteps = [
+      {
+        phase: '下ごしらえ（まとめて切る・レンジ）',
+        time: '0:00〜7:00',
+        dishTag: '全品共通',
+        text: '大根(1/2本)をいちょう切りにして耐熱皿に入れ、レンジ600Wで5分加熱開始。加熱中に小松菜・油揚げ・豆腐・長ねぎ・豚バラ肉をすべて切る。',
+        done: false
+      },
+      {
+        phase: '副菜と汁物の火入れ',
+        time: '7:00〜13:00',
+        dishTag: '副菜・汁物',
+        text: '小鍋2つにだし汁を沸かす。片方で「小松菜と油揚げの煮びたし」を2分煮て火を止め味を含ませる。もう片方に豆腐を入れて味噌汁を作る。',
+        done: false
+      },
+      {
+        phase: '主菜の仕上げ（熱々で食卓へ）',
+        time: '13:00〜23:00',
+        dishTag: '主菜',
+        text: 'フライパンで豚バラ肉を炒め、レンジ加熱済みの大根を投入。調味料を加えて強めの中火で7〜8分照りが出るまで煮絡めて完成。',
+        done: false
+      }
+    ];
+
+    // --- Render Functions ---
+    function renderMenuSlots() {
+      const container = document.getElementById('menu-slots-container');
+      container.innerHTML = dishSlots.map((slot, sIdx) => {
+        const dish = slot.candidates[slot.currentIdx];
+        const isNew = dish.badge === '新レシピ挑戦';
+        return `
+          <div class="p-4 transition-colors">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1 space-y-1">
+                <div class="flex items-center gap-2 text-xs tabular" style="color: var(--text-muted);">
+                  <span class="font-semibold" style="color: var(--text-secondary);">${slot.role}</span>
+                  <span>·</span>
+                  <span>${dish.source}</span>
+                  <span>·</span>
+                  <span style="${isNew ? 'color: var(--accent-primary); font-weight: 600;' : ''}">${dish.historyMeta}</span>
+                </div>
+                <h3 class="text-base font-semibold leading-snug palt">${dish.name}</h3>
+                <p class="text-xs leading-relaxed" style="color: var(--text-secondary);">
+                  主な材料: ${dish.ingredients.join('、')}
+                </p>
+              </div>
+
+              <!-- Slot Controls: Lock & Shuffle -->
+              <div class="flex items-center gap-1.5 shrink-0 pt-0.5">
+                <button
+                  onclick="toggleLock(${sIdx})"
+                  class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${slot.locked ? '' : 'btn-secondary'}"
+                  style="${slot.locked ? 'background-color: var(--accent-subtle); color: var(--accent-primary); border: 1px solid var(--accent-primary);' : ''}"
+                  title="お祖父様の担当やリクエスト時に固定"
+                >
+                  ${slot.locked ? '固定中' : '固定'}
+                </button>
+                <button
+                  onclick="shuffleSlot(${sIdx})"
+                  class="px-2.5 py-1 rounded-md text-xs font-medium btn-secondary flex items-center gap-1"
+                  ${slot.locked ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                  <span>変更</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderShopping() {
+      const mainList = document.getElementById('main-shopping-list');
+      const remainingCount = mainShoppingItems.filter(i => !i.checked).length;
+      document.getElementById('shop-count-badge').textContent = `(${remainingCount})`;
+      document.getElementById('main-shop-counter').textContent = `残り ${remainingCount}点`;
+
+      mainList.innerHTML = mainShoppingItems.map(item => `
+        <label class="px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none">
+          <div class="flex items-center gap-3 min-w-0">
+            <input
+              type="checkbox"
+              ${item.checked ? 'checked' : ''}
+              onchange="toggleShopItem(${item.id})"
+              class="w-4 h-4 rounded accent-[#C2410C]"
+            />
+            <span class="text-sm font-medium ${item.checked ? 'line-through opacity-45' : ''}">${item.name}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 text-xs tabular" style="color: var(--text-muted);">
+            <span class="font-medium" style="color: var(--text-secondary);">${item.amount}</span>
+            <span>·</span>
+            <span>${item.dish}</span>
+          </div>
+        </label>
+      `).join('');
+
+      const stapleList = document.getElementById('staple-shopping-list');
+      if (stapleItems.length === 0) {
+        stapleList.innerHTML = `<span class="text-xs py-1" style="color: var(--text-muted);">すべて買うものリストへ移動済みです</span>`;
+      } else {
+        stapleList.innerHTML = stapleItems.map(st => `
+          <button
+            onclick="moveStapleToMain(${st.id})"
+            class="btn-secondary px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1 transition-colors"
+          >
+            <span>＋ ${st.name}</span>
+          </button>
+        `).join('');
+      }
+    }
+
+    function renderCooking() {
+      const timelineContainer = document.getElementById('cooking-timeline-view');
+      timelineContainer.innerHTML = parallelSteps.map((step, idx) => `
+        <div onclick="toggleCookStep(${idx})" class="p-4 flex items-start gap-3.5 cursor-pointer select-none">
+          <div class="mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 text-xs font-bold tabular"
+               style="${step.done ? 'background-color: var(--accent-primary); border-color: var(--accent-primary); color: #fff;' : 'border-color: var(--border-strong); color: var(--text-secondary);'}">
+            ${step.done ? '✓' : idx + 1}
+          </div>
+          <div class="space-y-1 flex-1 min-w-0 ${step.done ? 'opacity-45 line-through' : ''}">
+            <div class="flex items-center justify-between gap-2 text-xs tabular" style="color: var(--text-muted);">
+              <span class="font-semibold" style="color: var(--text-primary);">${step.phase}</span>
+              <span>${step.time} · ${step.dishTag}</span>
+            </div>
+            <p class="text-sm leading-relaxed" style="color: var(--text-secondary); max-width: 65ch;">
+              ${step.text}
+            </p>
+          </div>
+        </div>
+      `).join('');
+
+      const individualContainer = document.getElementById('cooking-individual-view');
+      individualContainer.innerHTML = dishSlots.map(slot => {
+        const dish = slot.candidates[slot.currentIdx];
+        return `
+          <div class="p-4 space-y-2.5">
+            <div class="flex items-baseline justify-between">
+              <h3 class="text-sm font-semibold">${slot.role}：${dish.name}</h3>
+              <span class="text-xs" style="color: var(--text-muted);">${dish.source}</span>
+            </div>
+            <div class="text-xs px-3 py-2 rounded-md subtle-box" style="color: var(--text-secondary);">
+              材料（${servings}人分）：${dish.ingredients.join(' ／ ')}
+            </div>
+            <ol class="space-y-1.5 text-sm leading-relaxed list-decimal list-inside" style="color: var(--text-secondary);">
+              ${dish.steps.map(s => `<li>${s}</li>`).join('')}
+            </ol>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- Interactive Actions ---
+    function switchMainTab(tab) {
+      ['menu', 'shopping', 'cooking'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tab) {
+          view.classList.remove('hidden');
+          btn.classList.add('surface-sheet', 'font-semibold');
+          btn.style.color = 'var(--text-primary)';
+        } else {
+          view.classList.add('hidden');
+          btn.classList.remove('surface-sheet', 'font-semibold');
+          btn.style.color = 'var(--text-secondary)';
+        }
+      });
+    }
+
+    function toggleLock(slotIdx) {
+      dishSlots[slotIdx].locked = !dishSlots[slotIdx].locked;
+      renderMenuSlots();
+    }
+
+    function shuffleSlot(slotIdx) {
+      if (dishSlots[slotIdx].locked) return;
+      const slot = dishSlots[slotIdx];
+      slot.currentIdx = (slot.currentIdx + 1) % slot.candidates.length;
+      renderMenuSlots();
+      renderCooking();
+    }
+
+    function reproposeUnlocked() {
+      dishSlots.forEach((slot, idx) => {
+        if (!slot.locked) {
+          slot.currentIdx = (slot.currentIdx + 1) % slot.candidates.length;
+        }
+      });
+      renderMenuSlots();
+      renderCooking();
+    }
+
+    function proposeNewChallenge() {
+      // Set side dish to the new challenge recipe
+      dishSlots[1].locked = false;
+      dishSlots[1].currentIdx = 1;
+      renderMenuSlots();
+      renderCooking();
+    }
+
+    function toggleShopItem(id) {
+      const item = mainShoppingItems.find(i => i.id === id);
+      if (item) item.checked = !item.checked;
+      renderShopping();
+    }
+
+    function moveStapleToMain(id) {
+      const idx = stapleItems.findIndex(s => s.id === id);
+      if (idx === -1) return;
+      const st = stapleItems.splice(idx, 1)[0];
+      mainShoppingItems.push({
+        id: st.id,
+        name: st.name,
+        amount: '補充',
+        dish: '常備品',
+        checked: false
+      });
+      renderShopping();
+    }
+
+    function copyForLine() {
+      const unchecked = mainShoppingItems.filter(i => !i.checked);
+      const text = `【10/26 買い物メモ】\n` + unchecked.map(i => `・${i.name}（${i.amount}）`).join('\n');
+      document.getElementById('line-preview-text').textContent = text;
+      document.getElementById('line-toast').classList.remove('hidden');
+    }
+
+    function setCookingMode(mode) {
+      const tlBtn = document.getElementById('cook-mode-timeline');
+      const indBtn = document.getElementById('cook-mode-individual');
+      const tlView = document.getElementById('cooking-timeline-view');
+      const indView = document.getElementById('cooking-individual-view');
+      if (mode === 'timeline') {
+        tlView.classList.remove('hidden');
+        indView.classList.add('hidden');
+        tlBtn.classList.add('surface-sheet', 'font-semibold');
+        indBtn.classList.remove('surface-sheet', 'font-semibold');
+      } else {
+        tlView.classList.add('hidden');
+        indView.classList.remove('hidden');
+        indBtn.classList.add('surface-sheet', 'font-semibold');
+        tlBtn.classList.remove('surface-sheet', 'font-semibold');
+      }
+    }
+
+    function toggleCookStep(idx) {
+      parallelSteps[idx].done = !parallelSteps[idx].done;
+      renderCooking();
+    }
+
+    function changeServings(delta) {
+      servings = Math.max(1, Math.min(8, servings + delta));
+      document.getElementById('servings-display').textContent = `${servings}人分`;
+      renderCooking();
+    }
+
+    function shiftDate(delta) {
+      currentDayIdx = Math.max(0, Math.min(days.length - 1, currentDayIdx + delta));
+      const d = days[currentDayIdx];
+      document.getElementById('date-heading').textContent = d.date;
+      document.getElementById('day-label').textContent = d.dow;
+      document.getElementById('today-tag').textContent = d.tag;
+      document.querySelector('#watermark span').textContent = d.date;
+    }
+
+    function setViewport(mode) {
+      const container = document.getElementById('app-container');
+      const btnMobile = document.getElementById('vp-mobile');
+      const btnPc = document.getElementById('vp-pc');
+      if (mode === 'mobile') {
+        container.classList.remove('max-w-xl');
+        container.classList.add('max-w-[390px]');
+        btnMobile.style.backgroundColor = 'var(--bg-subtle)';
+        btnPc.style.backgroundColor = 'transparent';
+      } else {
+        container.classList.remove('max-w-[390px]');
+        container.classList.add('max-w-xl');
+        btnPc.style.backgroundColor = 'var(--bg-subtle)';
+        btnMobile.style.backgroundColor = 'transparent';
+      }
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.toggle('dark');
+      document.getElementById('theme-label').textContent = isDark ? 'ライト切替' : 'ダーク切替';
+    }
+
+    // --- Tier 2 & Tier 3 Drawers ---
+    function openDrawer(type) {
+      const backdrop = document.getElementById('drawer-backdrop');
+      const title = document.getElementById('drawer-title');
+      const body = document.getElementById('drawer-body');
+      backdrop.classList.remove('hidden');
+      backdrop.classList.add('flex');
+
+      if (type === 'stock') {
+        title.textContent = 'レシピ帳・作ってみたいリスト';
+        body.innerHTML = `
+          <div class="p-3 rounded-lg subtle-box space-y-2.5">
+            <div class="text-xs font-semibold" style="color: var(--text-secondary);">かんたんレシピ追加（3つの方法）</div>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="btn-secondary py-2 px-2 rounded-md text-xs font-medium text-center">本の写真を撮る</button>
+              <button class="btn-secondary py-2 px-2 rounded-md text-xs font-medium text-center">URL・検索追加</button>
+              <button class="btn-secondary py-2 px-2 rounded-md text-xs font-medium text-center">手入力メモ</button>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="text-xs font-semibold" style="color: var(--text-secondary);">作ってみたいリスト（5件）</div>
+            <div class="surface-sheet rounded-lg divider-y">
+              <div class="p-3 flex items-center justify-between">
+                <div>
+                  <div class="font-medium text-sm">ハッシュドポーク</div>
+                  <div class="text-xs" style="color: var(--text-muted);">山本ゆりさんレシピ本 写真取込済</div>
+                </div>
+                <button onclick="closeDrawer()" class="btn-secondary px-2.5 py-1 rounded text-xs">今日の主菜にする</button>
+              </div>
+              <div class="p-3 flex items-center justify-between">
+                <div>
+                  <div class="font-medium text-sm">トマトとツナのポン酢和え</div>
+                  <div class="text-xs" style="color: var(--text-muted);">クラシル公式</div>
+                </div>
+                <button onclick="proposeNewChallenge(); closeDrawer();" class="btn-secondary px-2.5 py-1 rounded text-xs">今日の副菜にする</button>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (type === 'history') {
+        title.textContent = 'カレンダー履歴（作成記録）';
+        body.innerHTML = `
+          <p class="text-xs" style="color: var(--text-secondary);">確定した献立は自動的に記録されます。当日別のものを作った場合はタップして書き換えられます。</p>
+          <div class="surface-sheet rounded-lg divider-y tabular">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="text-xs" style="color: var(--text-muted);">10.25 (日)</div>
+                <div class="text-sm font-medium">鶏の唐揚げ · ポテトサラダ · コーンスープ</div>
+              </div>
+              <button class="btn-secondary px-2.5 py-1 rounded text-xs">修正</button>
+            </div>
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="text-xs" style="color: var(--text-muted);">10.24 (土)</div>
+                <div class="text-sm font-medium">サバの塩焼き · ほうれん草胡麻和え · 豚汁</div>
+              </div>
+              <button class="btn-secondary px-2.5 py-1 rounded text-xs">修正</button>
+            </div>
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="text-xs" style="color: var(--text-muted);">10.23 (金)</div>
+                <div class="text-sm font-medium">ハヤシライス · グリーンサラダ</div>
+              </div>
+              <button class="btn-secondary px-2.5 py-1 rounded text-xs">修正</button>
+            </div>
+          </div>
+        `;
+      } else if (type === 'settings') {
+        title.textContent = 'Googleカレンダー取込・初期設定';
+        body.innerHTML = `
+          <div class="space-y-3">
+            <div class="p-3.5 rounded-lg subtle-box space-y-2">
+              <div class="text-xs font-semibold">1. お母様のGoogleカレンダー (.ics) 初回インポート</div>
+              <p class="text-xs leading-relaxed" style="color: var(--text-secondary);">
+                書き出した .ics ファイルを選択すると、Geminiが「料理以外の予定」を除外し、表記ゆれ（「生姜焼き」「しょうが焼き」等）を名寄せして作成回数を集計します。
+              </p>
+              <div class="pt-1">
+                <button class="btn-primary px-3 py-1.5 rounded-md text-xs font-medium">.ics ファイルを選択して解析</button>
+              </div>
+            </div>
+            <div class="surface-sheet rounded-lg p-3.5 space-y-2">
+              <div class="text-xs font-semibold">仕分けルール（自動判定プレビュー）</div>
+              <div class="text-xs space-y-1.5" style="color: var(--text-secondary);">
+                <div>・<strong>5回以上作っている料理</strong> → 「我が家の定番」として登録（後からレシピ本の写真や手入力で家庭の味を登録）</div>
+                <div>・<strong>1〜4回作った料理</strong> → AIが標準的な材料・工程で仮レシピを自動生成（画面から微調整可能）</div>
+              </div>
+            </div>
+            <div class="surface-sheet rounded-lg p-3.5 space-y-2">
+              <div class="text-xs font-semibold">2. 「家にあるかも（常備品）」対象リスト</div>
+              <p class="text-xs" style="color: var(--text-secondary);">
+                玉ねぎ、にんにく、しょうが、長ねぎ、卵、醤油、みりん、酒、砂糖、味噌、酢、サラダ油、ごま油、片栗粉、だしの素
+              </p>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function closeDrawer() {
+      const backdrop = document.getElementById('drawer-backdrop');
+      backdrop.classList.add('hidden');
+      backdrop.classList.remove('flex');
+    }
+
+    // Initialize
+    renderMenuSlots();
+    renderShopping();
+    renderCooking();
+  </script>
+</body>
+</html>

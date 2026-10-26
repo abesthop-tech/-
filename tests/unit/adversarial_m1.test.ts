@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { db, client, ensureDatabaseInitialized } from '@/db';
 import { dishes, dailyMenus, appSettings, parseDish, parseDailyMenu } from '@/db/schema';
 import { verifyPasscode, middleware, PASSCODE_COOKIE_NAME, PASSCODE_HEADER_NAME } from '@/middleware';

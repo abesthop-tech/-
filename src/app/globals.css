@@ -19,7 +19,7 @@
   --watermark-color: rgba(28, 25, 23, 0.035);
 }
 
-.dark {
+html.dark {
   --bg-canvas: #151821;
   --bg-surface: #1C202B;
   --bg-subtle: #242936;
@@ -39,18 +39,69 @@
 body {
   background-color: var(--bg-canvas);
   color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'BIZ UDPGothic', 'Noto Sans JP', sans-serif;
+  -webkit-font-smoothing: antialiased;
   background-image:
     radial-gradient(circle at 50% 0%, var(--glow-color) 0%, transparent 65%),
     radial-gradient(var(--dot-color) 1px, transparent 1px);
   background-size: 100% 100%, 20px 20px;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-@layer utilities {
-  .palt {
-    font-feature-settings: "palt" 1;
-  }
-  .tabular {
-    font-variant-numeric: tabular-nums;
-  }
+.palt {
+  font-feature-settings: "palt" 1;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.surface-sheet {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+
+.subtle-box {
+  background-color: var(--bg-subtle);
+}
+
+.divider-y > * + * {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.input-field {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+
+.input-field:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -1px;
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: #FFFFFF;
+}
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+.btn-secondary:hover {
+  background-color: var(--bg-subtle);
+}
+
+.btn-ghost {
+  color: var(--text-secondary);
+}
+.btn-ghost:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
 }
